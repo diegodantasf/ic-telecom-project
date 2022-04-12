@@ -11,7 +11,7 @@ import numpy as np
 from commpy.channels import SISOFlatChannel
 
 sys.path.append(os.path.abspath('ml4comm'))
-from ml4comm.qam_awgn import generate_symbols
+from ml4comm.ml4comm.qam_awgn import generate_symbols
 
 np.random.seed(2) # Important
 
