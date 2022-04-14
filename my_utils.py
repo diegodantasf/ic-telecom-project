@@ -8,6 +8,10 @@ from ml4comm.qam_awgn import generate_symbols
 from ml4comm.qam_crazy import crazy_channel_propagate
 from ml4comm.qam_analyzer import plot_decision_boundary, ser, plot_confusion_matrix
 
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import GridSearchCV
+
 from sklearn.model_selection import GridSearchCV
 
 class Dataset:
@@ -48,19 +52,17 @@ class Dataset:
     
     return (self.X_train[:n_samples], self.y_train[:n_samples])
     
-    
   def get_test_dataset(self):
     return (self.X_test, self.y_test)
 
 def grid_search(model, X_train, y_train, parameters, name='MODEL NAME'):
-    clf = GridSearchCV(model, parameters, scoring='neg_mean_squared_error')
+    clf = GridSearchCV(model, parameters, scoring='accuracy')
     clf.fit(X_train, y_train)
 
     results = clf.cv_results_
     print(f'------------ {name} ---------------')
     print(f'TRAIN SIZE: {len(y_train)}')
-    ranks = results['rank_test_score']
-    print(f'ranks: {ranks}')
+    
     for rank in results['rank_test_score']:
         params = results['params'][rank-1]
         score = results['mean_test_score'][rank-1]
@@ -77,6 +79,32 @@ def test_model(model, X_test, y_test, name='MODEL NAME'):
 def plots(model, X_data, y_data, n_classes):
     plot_decision_boundary(model, X_data, y_data, legend=True)
     plot_confusion_matrix(model, X_data, y_data, n_classes)
-
-
+    
+def get_classifier(name):
+    classifiers = {
+        'decision_tree': {
+            'model': DecisionTreeClassifier(),
+            'parameters': {
+                'max_depth': [100, 50, 10]
+            }
+        },
+        'knn': {
+            'model': KNeighborsClassifier(),
+            'parameters': {
+                'n_neighbors': [1, 2, 3, 4, 5]
+            }
+        }
+    }
+    
+    return (classifiers[name]['model'], classifiers[name]['parameters'])
   
+def evaluate_model(name):
+    model, parameters = get_classifier(name)
+    
+    ds = Dataset(channel_type='awgn')
+    train_sizes = [100, 200]
+    
+    for size in train_sizes:
+        X_train, y_train = ds.get_train_dataset(n_samples=size)
+        best_clf = grid_search(model, X_train, y_train, parameters, name='Decision Tree')
+        plots(best_clf, X_train, y_train, ds.M)
