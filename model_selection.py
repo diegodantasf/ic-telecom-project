@@ -11,8 +11,9 @@ from ml4comm.qam_analyzer import plot_decision_boundary, ser, plot_confusion_mat
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer
 
-from sklearn.model_selection import GridSearchCV
+import pandas as pd
 
 class Dataset:
   def __init__(self, channel_type='awgn'):
@@ -21,7 +22,9 @@ class Dataset:
     self.SNR_dB       = 15      # Signal to noise ratio in dB     
     self.code_rate    = 1       # Rate of the used code
     self.Es           = 1       # Average symbol energy
-  
+
+    np.random.seed(52)
+    
     # Generate the QAM symbols
     symbs, indices = generate_symbols(self.num_symbols, self.M)
     
@@ -55,18 +58,21 @@ class Dataset:
   def get_test_dataset(self):
     return (self.X_test, self.y_test)
 
+def SER(y_true, y_pred):
+    return np.sum(y_true != y_pred) / len(y_true)
+
 def grid_search(model, X_train, y_train, parameters, name='MODEL NAME'):
-    clf = GridSearchCV(model, parameters, scoring='accuracy')
+    clf = GridSearchCV(model, parameters, scoring=make_scorer(SER, greater_is_better=False), verbose=1)
     clf.fit(X_train, y_train)
 
-    results = clf.cv_results_
     print(f'------------ {name} ---------------')
     print(f'TRAIN SIZE: {len(y_train)}')
     
-    for rank in results['rank_test_score']:
-        params = results['params'][rank-1]
-        score = results['mean_test_score'][rank-1]
-        print(f'rank {rank}: {params} - score: {score}')
+    df = pd.DataFrame(clf.cv_results_)
+    df = df.loc[:, ['params', 'mean_test_score', 'rank_test_score']]
+
+    for i, row in df.iterrows():
+        print(f"rank {row['rank_test_score']}: {row['params']} - score: {-row['mean_test_score']}")
 
     return clf.best_estimator_
 
@@ -98,13 +104,15 @@ def get_classifier(name):
     
     return (classifiers[name]['model'], classifiers[name]['parameters'])
   
-def evaluate_model(name):
-    model, parameters = get_classifier(name)
+def evaluate_model(name, train_sizes=[3000, 2500]):
+    clf, parameters = get_classifier(name)
     
     ds = Dataset(channel_type='awgn')
-    train_sizes = [100, 200]
     
     for size in train_sizes:
         X_train, y_train = ds.get_train_dataset(n_samples=size)
-        best_clf = grid_search(model, X_train, y_train, parameters, name='Decision Tree')
+        best_clf = grid_search(clf, X_train, y_train, parameters, name)
         plots(best_clf, X_train, y_train, ds.M)
+
+if __name__ == '__main__':
+    evaluate_model('knn')
