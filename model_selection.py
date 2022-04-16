@@ -9,9 +9,12 @@ from ml4comm.qam_crazy import crazy_channel_propagate
 from ml4comm.qam_analyzer import plot_decision_boundary, ser, plot_confusion_matrix
 
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
+
+from imblearn.under_sampling import RandomUnderSampler
 
 import pandas as pd
 
@@ -50,10 +53,13 @@ class Dataset:
       np.imag(channel_output[self.train_size:])], axis=1)
   
   def get_train_dataset(self, n_samples=3000):
-    if (n_samples > 3000):
+    if n_samples > 3000:
       raise Exception("Max size is 3000")
+    if n_samples // self.M < 5:
+      raise Exception("Less than 5 samples for each class, set n_samples = self.M * 5 at least")
     
-    return (self.X_train[:n_samples], self.y_train[:n_samples])
+    rus = RandomUnderSampler(sampling_strategy = {c:n_samples//self.M for c in range(self.M)}, random_state=52)
+    return rus.fit_resample(self.X_train, self.y_train)
     
   def get_test_dataset(self):
     return (self.X_test, self.y_test)
@@ -100,15 +106,25 @@ def get_classifier(name):
             'parameters': {
                 'n_neighbors': [1, 2, 3, 4, 5]
             }
+        },
+        'random_forest': {
+            'model': RandomForestClassifier(),
+            'parameters': {
+                'n_estimators': [4, 8, 16],
+                'criterion': ['gini', 'entropy'],
+                'max_depth': [3, 4, 5, 6],
+                'max_features': [2],
+                'random_state': [52]
+            }
         }
     }
     
     return (classifiers[name]['model'], classifiers[name]['parameters'])
   
-def evaluate_model(name, train_sizes=[3000, 2500]):
+def evaluate_model(name, channel='awgn', train_sizes=[500, 250, 80]):
     clf, parameters = get_classifier(name)
     
-    ds = Dataset(channel_type='awgn')
+    ds = Dataset(channel_type=channel)
     
     for size in train_sizes:
         X_train, y_train = ds.get_train_dataset(n_samples=size)
@@ -117,5 +133,6 @@ def evaluate_model(name, train_sizes=[3000, 2500]):
         plots(best_clf, X_test, y_test, ds.M)
         test_model(best_clf, X_test, y_test, name)
 
+
 if __name__ == '__main__':
-    evaluate_model('knn')
+    evaluate_model(name='random_forest', channel='awgn', train_sizes=[500, 250, 80])
