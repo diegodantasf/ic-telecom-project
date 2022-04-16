@@ -112,8 +112,10 @@ def evaluate_model(name, train_sizes=[3000, 2500]):
     
     for size in train_sizes:
         X_train, y_train = ds.get_train_dataset(n_samples=size)
+        X_test, y_test = ds.get_test_dataset()
         best_clf = grid_search(clf, X_train, y_train, parameters, name)
-        plots(best_clf, X_train, y_train, ds.M)
+        plots(best_clf, X_test, y_test, ds.M)
+        test_model(best_clf, X_test, y_test, name)
 
 if __name__ == '__main__':
     evaluate_model('knn')
