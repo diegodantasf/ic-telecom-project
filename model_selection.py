@@ -70,9 +70,10 @@ def grid_search(model, X_train, y_train, parameters, name='MODEL NAME'):
     
     df = pd.DataFrame(clf.cv_results_)
     df = df.loc[:, ['params', 'mean_test_score', 'rank_test_score']]
+    df = df.sort_values(by=['rank_test_score'])
 
     for i, row in df.iterrows():
-        print(f"rank {row['rank_test_score']}: {row['params']} - score: {-row['mean_test_score']}")
+        print(f"rank {row['rank_test_score']}: {row['params']} - SER: {-row['mean_test_score']:.3%}")
 
     return clf.best_estimator_
 
@@ -111,8 +112,10 @@ def evaluate_model(name, train_sizes=[3000, 2500]):
     
     for size in train_sizes:
         X_train, y_train = ds.get_train_dataset(n_samples=size)
+        X_test, y_test = ds.get_test_dataset()
         best_clf = grid_search(clf, X_train, y_train, parameters, name)
-        plots(best_clf, X_train, y_train, ds.M)
+        plots(best_clf, X_test, y_test, ds.M)
+        test_model(best_clf, X_test, y_test, name)
 
 if __name__ == '__main__':
     evaluate_model('knn')
