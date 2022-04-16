@@ -70,9 +70,10 @@ def grid_search(model, X_train, y_train, parameters, name='MODEL NAME'):
     
     df = pd.DataFrame(clf.cv_results_)
     df = df.loc[:, ['params', 'mean_test_score', 'rank_test_score']]
+    df = df.sort_values(by=['rank_test_score'])
 
     for i, row in df.iterrows():
-        print(f"rank {row['rank_test_score']}: {row['params']} - score: {-row['mean_test_score']}")
+        print(f"rank {row['rank_test_score']}: {row['params']} - SER: {-row['mean_test_score']:.3%}")
 
     return clf.best_estimator_
 
