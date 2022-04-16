@@ -59,7 +59,10 @@ class Dataset:
       raise Exception("Less than 5 samples for each class, set n_samples = self.M * 5 at least")
     
     rus = RandomUnderSampler(sampling_strategy = {c:n_samples//self.M for c in range(self.M)}, random_state=52)
-    return rus.fit_resample(self.X_train, self.y_train)
+    try:
+      return rus.fit_resample(self.X_train, self.y_train)
+    except ValueError:
+      return (self.X_train[:n_samples], self.y_train[:n_samples])
     
   def get_test_dataset(self):
     return (self.X_test, self.y_test)
@@ -135,4 +138,4 @@ def evaluate_model(name, channel='awgn', train_sizes=[500, 250, 80]):
 
 
 if __name__ == '__main__':
-    evaluate_model(name='random_forest', channel='awgn', train_sizes=[500, 250, 80])
+    evaluate_model(name='random_forest', channel='awgn', train_sizes=[2800, 80])
