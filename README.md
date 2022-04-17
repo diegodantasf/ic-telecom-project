@@ -2,8 +2,8 @@
 
 ## Instalation
 
-Need python 3.8
+When cloning this project, use `--recursive` option to recursively clone submodules.
+
+You will need `python 3.8` and `pip`. To setup environment, run:
 
 ```pip install -r requirements.txt```
-
-```git clone https://github.com/lasseufpa/ml4comm```
