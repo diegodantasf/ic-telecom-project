@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import make_scorer
+from sklearn.svm import SVC
 
 from imblearn.under_sampling import RandomUnderSampler
 
@@ -119,6 +120,18 @@ def get_classifier(name):
                 'max_features': [2],
                 'random_state': [52]
             }
+        },
+        'svm_rbf': {
+            'model': SVC(),
+            'parameters': {
+                'C':[1e-2, 1e-1, 1, 1e2,1e3, 1e4,1e5, 1e6, 1e7, 1e8, 1e9],
+                #'degree':[3, 4],
+                'gamma':['scale', 'auto', 1e-2, 1e-3, 1e-4, 1e-5],
+                'random_state': [52],
+                #'tol':[1e-4, 1e-3],
+                #'max_iter':[1e5, 1e4],
+                'decision_function_shape':['ovo']
+            }
         }
     }
     
@@ -138,4 +151,4 @@ def evaluate_model(name, channel='awgn', train_sizes=[500, 250, 80]):
 
 
 if __name__ == '__main__':
-    evaluate_model(name='random_forest', channel='awgn', train_sizes=[2800, 80])
+    evaluate_model(name='svm_rbf', channel='awgn', train_sizes=[720, 640, 480, 320,160, 144])
